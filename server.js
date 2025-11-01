@@ -11,43 +11,31 @@ app.get('/', (req, res) => {
     res.send('Hello World!');
 });
 
-const d = require('./user.json');
+const json = require('./user.json');
 
 const uri = process.env.MONGODB_URI;
+let data =[];
+let client;
 
-async function main() {
-	// we'll add code here soon
-    const client = new MongoClient(uri);
-    try {
-        await client.connect();
-    data = await listDatabases(client);
-    return data;
-    } catch (e) {
-        console.error(e);
-    }
-    finally {
-    await client.close();
+async function connectDB() {
+  try {
+    client = new MongoClient(uri);
+    await client.connect();
+    console.log('Connected to MongoDB');
+
+    const db = client.db('data');
+    const collection = db.collection('user');
+
+    data = await collection.find({}).toArray();
+    console.log('Documents found:', data);
+
+  } catch (err) {
+    console.error('Error connecting to MongoDB:', err);
+  }
 }
-}
-async function listDatabases(client){
-    databasesList = await client.db().admin().listDatabases();
- 
-    console.log("Databases:");
-    databasesList.databases.forEach(db => console.log(` - ${db.name}`));
-    console.log(databasesList.databases);
-
-    //Accessing of my custom db and collection
-    const db = client.db("data"); 
-    const collection = db.collection("user");
-    const documents = await collection.find({}).toArray();
-    console.log("📄 Documents in 'data.profiles':", documents[0].user);
-    return documents;
-};
-
-main().catch(console.error);
-var data = main();
+connectDB();
 app.get('/professional', (req, res) => {
-    res.json(data.user);
+    res.json(data[0].user);
 });
 
 
